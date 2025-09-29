@@ -15,7 +15,7 @@ fi
 
 # 构建项目（移除src/参数，因为它是空目录）
 echo "开始构建项目..."
-go build -o screen_share screen_share.go
+go build -o screen_share src/*
 if [ $? -eq 0 ]; then
     echo "构建成功！可执行文件：$dir/screen_share"
     # 检查并提醒执行权限
