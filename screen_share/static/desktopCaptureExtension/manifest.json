@@ -1,0 +1,30 @@
+{
+  "name": "Screensharing Extension",
+  "description": "Screensharing Extension for my app",
+  "version": "1.0.0",
+  "manifest_version": 3,
+  "icons": {
+    "128": "icon.png"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://webrtc.github.io/samples/*",
+        "http://www.dcj.com/*",
+        "https://www.dcj.com/*"
+      ],
+      "js": ["content-script.js"]
+    }
+  ],
+  "permissions": [
+    "desktopCapture"
+  ],
+  "host_permissions": [
+    "https://webrtc.github.io/samples/*",
+    "http://www.dcj.com/*",
+    "https://www.dcj.com/*"
+  ]
+}
