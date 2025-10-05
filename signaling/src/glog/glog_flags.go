@@ -386,6 +386,10 @@ func SetLogToStderr(toStderr_ bool) {
 	toStderr = toStderr_
 }
 
+func SetAlsoToStderr(alsoToStderr_ bool) {
+	alsoToStderr = alsoToStderr_
+}
+
 func SetLogLevel(level int32) {
 	stderrThreshold = severityFlag(level)
 }

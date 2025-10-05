@@ -73,7 +73,7 @@ func (s Severity) String() string {
 // ParseSeverity returns the case-insensitive Severity value for the given string.
 func ParseSeverity(name string) (Severity, error) {
 	name = strings.ToUpper(name)
-	for s := Info; s <= Fatal; s++ {
+	for s := Debug; s <= Fatal; s++ {
 		if s.String() == name {
 			return s, nil
 		}

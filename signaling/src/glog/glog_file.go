@@ -41,9 +41,8 @@ var logDirs []string
 var (
 	// If non-empty, overrides the choice of directory in which to write logs.
 	// See createLogDirs for the full list of possible destinations.
-	logDir  = flag.String("log_dir", "", "If non-empty, write log files in this directory")
-	logLink = flag.String("log_link", "", "If non-empty, add symbolic links in this directory to the log files")
-	// 修改：将默认值从logsink.Info改为logsink.Debug
+	logDir      = flag.String("log_dir", "", "If non-empty, write log files in this directory")
+	logLink     = flag.String("log_link", "", "If non-empty, add symbolic links in this directory to the log files")
 	logBufLevel = flag.Int("logbuflevel", int(logsink.Debug), "Buffer log messages logged at this level or lower"+
 		" (-1 means don't buffer; 0 means buffer DEBUG only; ...). Has limited applicability on non-prod platforms.")
 )
@@ -228,7 +227,7 @@ func (s *stderrSink) Emit(m *logsink.Meta, data []byte) (n int, err error) {
 
 // severityWriters is an array of flushSyncWriter with a value for each
 // logsink.Severity.
-type severityWriters [4]flushSyncWriter
+type severityWriters [5]flushSyncWriter
 
 // fileSink is a logsink.Text that prints to a set of Google log files.
 type fileSink struct {
@@ -366,7 +365,7 @@ func (s *fileSink) createMissingFiles(upTo logsink.Severity) error {
 	now := time.Now()
 	// Files are created in increasing severity order, so we can be assured that
 	// if a high severity logfile exists, then so do all of lower severity.
-	for sev := logsink.Info; sev <= upTo; sev++ {
+	for sev := logsink.Debug; sev <= upTo; sev++ {
 		if s.file[sev] != nil {
 			continue
 		}
@@ -404,7 +403,7 @@ func Flush() {
 
 // Flush flushes all the logs and attempts to "sync" their data to disk.
 func (s *fileSink) Flush() error {
-	return s.flush(logsink.Info)
+	return s.flush(logsink.Debug)
 }
 
 // flush flushes all logs of severity threshold or greater.

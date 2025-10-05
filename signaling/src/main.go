@@ -15,6 +15,7 @@ func main() {
 	}
 
 	glog.Info("signaling server start")
+	glog.Debug("signaling server start debug")
 
 	port := ":8080"
 	err := framework.StartHttp(port)

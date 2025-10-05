@@ -7,7 +7,7 @@ import (
 func Init() error {
 	glog.SetLogDir("./log")
 	glog.SetLogFileName("signaling")
-	glog.SetLogToStderr(true)
-	glog.SetLogLevel(0)
+	glog.SetAlsoToStderr(true)
+	// glog.SetLogLevel(0)
 	return nil
 }
