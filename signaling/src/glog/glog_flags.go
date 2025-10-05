@@ -382,6 +382,14 @@ func backtraceAt(file string, line int) bool {
 	return logBacktraceAt.match(file, line)
 }
 
+func SetLogToStderr(toStderr_ bool) {
+	toStderr = toStderr_
+}
+
+func SetLogLevel(level int32) {
+	stderrThreshold = severityFlag(level)
+}
+
 func init() {
 	vflags.moduleLevelCache.Store(&sync.Map{})
 
@@ -391,7 +399,6 @@ func init() {
 	flag.Var(&logBacktraceAt, "log_backtrace_at", "when logging hits line file:N, emit a stack trace")
 
 	stderrThreshold = severityFlag(logsink.Error)
-
 	flag.BoolVar(&toStderr, "logtostderr", false, "log to standard error instead of files")
 	flag.BoolVar(&alsoToStderr, "alsologtostderr", false, "log to standard error as well as files")
 	flag.Var(&stderrThreshold, "stderrthreshold", "logs at or above this threshold go to stderr")

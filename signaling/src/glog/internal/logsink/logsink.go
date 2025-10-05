@@ -39,7 +39,9 @@ type Severity int8
 // A message written to a high-severity log file is also written to each
 // lower-severity log file.
 const (
-	Info Severity = iota
+	// Debug contains logs for debugging purposes.
+	Debug Severity = iota
+	Info
 	Warning
 	Error
 
@@ -53,6 +55,9 @@ const (
 
 func (s Severity) String() string {
 	switch s {
+	// Debug contains logs for debugging purposes.
+	case Debug:
+		return "DEBUG"
 	case Info:
 		return "INFO"
 	case Warning:
@@ -209,7 +214,7 @@ func textPrintf(m *Meta, textSinks []Text, format string, args ...any) (n int, e
 	//
 	// Avoid Fprintf, for speed. The format is so simple that we can do it quickly by hand.
 	// It's worth about 3X. Fprintf is hard.
-	const severityChar = "IWEF"
+	const severityChar = "DIWEF"
 	buf.WriteByte(severityChar[m.Severity])
 
 	_, month, day := m.Time.Date()

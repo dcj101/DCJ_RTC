@@ -41,10 +41,11 @@ var logDirs []string
 var (
 	// If non-empty, overrides the choice of directory in which to write logs.
 	// See createLogDirs for the full list of possible destinations.
-	logDir      = flag.String("log_dir", "", "If non-empty, write log files in this directory")
-	logLink     = flag.String("log_link", "", "If non-empty, add symbolic links in this directory to the log files")
-	logBufLevel = flag.Int("logbuflevel", int(logsink.Info), "Buffer log messages logged at this level or lower"+
-		" (-1 means don't buffer; 0 means buffer INFO only; ...). Has limited applicability on non-prod platforms.")
+	logDir  = flag.String("log_dir", "", "If non-empty, write log files in this directory")
+	logLink = flag.String("log_link", "", "If non-empty, add symbolic links in this directory to the log files")
+	// 修改：将默认值从logsink.Info改为logsink.Debug
+	logBufLevel = flag.Int("logbuflevel", int(logsink.Debug), "Buffer log messages logged at this level or lower"+
+		" (-1 means don't buffer; 0 means buffer DEBUG only; ...). Has limited applicability on non-prod platforms.")
 )
 
 func SetLogDir(name string) {
@@ -251,7 +252,7 @@ func (s *fileSink) Emit(m *logsink.Meta, data []byte) (n int, err error) {
 	if err = s.createMissingFiles(m.Severity); err != nil {
 		return 0, err
 	}
-	for sev := m.Severity; sev >= logsink.Info; sev-- {
+	for sev := m.Severity; sev >= logsink.Debug; sev-- {
 		if _, fErr := s.file[sev].Write(data); fErr != nil && err == nil {
 			err = fErr // Take the first error.
 		}
@@ -383,7 +384,8 @@ func (s *fileSink) createMissingFiles(upTo logsink.Severity) error {
 
 // flushDaemon periodically flushes the log file buffers.
 func (s *fileSink) flushDaemon() {
-	tick := time.NewTicker(30 * time.Second)
+	// tick := time.NewTicker(30 * time.Second)
+	tick := time.NewTicker(30 * time.Millisecond)
 	defer tick.Stop()
 	for {
 		select {

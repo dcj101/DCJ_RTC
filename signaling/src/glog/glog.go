@@ -145,10 +145,11 @@ func (s *OutputStats) Bytes() int64 {
 // Stats tracks the number of lines of output and number of bytes
 // per severity level. Values must be read with atomic.LoadInt64.
 var Stats struct {
-	Info, Warning, Error OutputStats
+	Debug, Info, Warning, Error OutputStats
 }
 
 var severityStats = [...]*OutputStats{
+	logsink.Debug:   &Stats.Debug,
 	logsink.Info:    &Stats.Info,
 	logsink.Warning: &Stats.Warning,
 	logsink.Error:   &Stats.Error,
@@ -419,6 +420,116 @@ func V(level Level) Verbose {
 // VDepth(0, level) is the same as V(level).
 func VDepth(depth int, level Level) Verbose {
 	return Verbose(verboseEnabled(depth+1, level))
+}
+
+// Debug logs to the DEBUG log.
+// Arguments are handled in the manner of fmt.Print; a newline is appended if missing.
+func Debug(args ...any) {
+	DebugDepth(1, args...)
+}
+
+// DebugDepth calls Debug from a different depth in the call stack.
+// This enables a callee to emit logs that use the callsite information of its caller
+// or any other callers in the stack.
+func DebugDepth(depth int, args ...any) {
+	logf(depth+1, logsink.Debug, false, noStack, defaultFormat(args), args...)
+}
+
+// DebugDepthf acts as DebugDepth but with format string.
+func DebugDepthf(depth int, format string, args ...any) {
+	logf(depth+1, logsink.Debug, false, noStack, format, args...)
+}
+
+// Debugln logs to the DEBUG log.
+// Arguments are handled in the manner of fmt.Println; a newline is appended if missing.
+func Debugln(args ...any) {
+	logf(1, logsink.Debug, false, noStack, lnFormat(args), args...)
+}
+
+// Debugf logs to the DEBUG log.
+// Arguments are handled in the manner of fmt.Printf; a newline is appended if missing.
+func Debugf(format string, args ...any) {
+	logf(1, logsink.Debug, false, noStack, format, args...)
+}
+
+// DebugContext is like [Debug], but with an extra [context.Context] parameter.
+func DebugContext(ctx context.Context, args ...any) {
+	DebugContextDepth(ctx, 1, args...)
+}
+
+// DebugContextf is like [Debugf], but with an extra [context.Context] parameter.
+func DebugContextf(ctx context.Context, format string, args ...any) {
+	ctxlogf(ctx, 1, logsink.Debug, false, noStack, format, args...)
+}
+
+// DebugContextDepth is like [DebugDepth], but with an extra [context.Context] parameter.
+func DebugContextDepth(ctx context.Context, depth int, args ...any) {
+	ctxlogf(ctx, depth+1, logsink.Debug, false, noStack, defaultFormat(args), args...)
+}
+
+// DebugContextDepthf is like [DebugDepthf], but with an extra [context.Context] parameter.
+func DebugContextDepthf(ctx context.Context, depth int, format string, args ...any) {
+	ctxlogf(ctx, depth+1, logsink.Debug, false, noStack, format, args...)
+}
+
+// Debug函数的Verbose版本
+// Debug is equivalent to the global Debug function, guarded by the value of v.
+func (v Verbose) Debug(args ...any) {
+	v.DebugDepth(1, args...)
+}
+
+// DebugDepth is equivalent to the global DebugDepth function, guarded by the value of v.
+func (v Verbose) DebugDepth(depth int, args ...any) {
+	if v {
+		logf(depth+1, logsink.Debug, true, noStack, defaultFormat(args), args...)
+	}
+}
+
+// DebugDepthf is equivalent to the global DebugDepthf function, guarded by the value of v.
+func (v Verbose) DebugDepthf(depth int, format string, args ...any) {
+	if v {
+		logf(depth+1, logsink.Debug, true, noStack, format, args...)
+	}
+}
+
+// Debugln is equivalent to the global Debugln function, guarded by the value of v.
+func (v Verbose) Debugln(args ...any) {
+	if v {
+		logf(1, logsink.Debug, true, noStack, lnFormat(args), args...)
+	}
+}
+
+// Debugf is equivalent to the global Debugf function, guarded by the value of v.
+func (v Verbose) Debugf(format string, args ...any) {
+	if v {
+		logf(1, logsink.Debug, true, noStack, format, args...)
+	}
+}
+
+// DebugContext is equivalent to the global DebugContext function, guarded by the value of v.
+func (v Verbose) DebugContext(ctx context.Context, args ...any) {
+	v.DebugContextDepth(ctx, 1, args...)
+}
+
+// DebugContextf is equivalent to the global DebugContextf function, guarded by the value of v.
+func (v Verbose) DebugContextf(ctx context.Context, format string, args ...any) {
+	if v {
+		ctxlogf(ctx, 1, logsink.Debug, true, noStack, format, args...)
+	}
+}
+
+// DebugContextDepth is equivalent to the global DebugContextDepth function, guarded by the value of v.
+func (v Verbose) DebugContextDepth(ctx context.Context, depth int, args ...any) {
+	if v {
+		ctxlogf(ctx, depth+1, logsink.Debug, true, noStack, defaultFormat(args), args...)
+	}
+}
+
+// DebugContextDepthf is equivalent to the global DebugContextDepthf function, guarded by the value of v.
+func (v Verbose) DebugContextDepthf(ctx context.Context, depth int, format string, args ...any) {
+	if v {
+		ctxlogf(ctx, depth+1, logsink.Debug, true, noStack, format, args...)
+	}
 }
 
 // Info is equivalent to the global Info function, guarded by the value of v.
