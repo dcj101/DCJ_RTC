@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"html/template"
 	"net/http"
+	"signaling/src/framework"
 )
 
 type XrtcClientPushAction struct {
@@ -24,7 +25,7 @@ func writeHtmlErrorResponse(w http.ResponseWriter, status int, err string) {
 	w.Write([]byte(fmt.Sprintf("%d - %s", status, err)))
 }
 
-func (a *XrtcClientPushAction) Execute(w http.ResponseWriter, r *http.Request) {
+func (a *XrtcClientPushAction) Execute(w http.ResponseWriter, r *framework.ComRequest) {
 	t, err := template.ParseFiles("./static/template/push.tpl")
 	if err != nil {
 		fmt.Println("parse template failed, err:", err)
@@ -33,15 +34,8 @@ func (a *XrtcClientPushAction) Execute(w http.ResponseWriter, r *http.Request) {
 	}
 
 	request := make(map[string]string)
-
-	// 关键：添加表单解析步骤
-	err = r.ParseForm()
-	if err != nil {
-		fmt.Println("parse form failed, err:", err)
-	}
-
 	// 现在可以正确获取表单数据了
-	for key, values := range r.Form {
+	for key, values := range r.R.Form {
 		request[key] = values[0]
 		fmt.Println("key:", key, "value:", values[0])
 	}
