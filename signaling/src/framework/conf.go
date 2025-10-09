@@ -1,12 +1,17 @@
 package framework
 
-import "signaling/src/third_lib/goconfig"
+import (
+	"signaling/src/third_lib/goconfig"
+)
 
 type FrameworkConf struct {
 	logDir      string
 	logFile     string
 	logLevel    string
 	logToStderr bool
+
+	httpPort      int
+	httpStaticDir string
 }
 
 var configFile *goconfig.ConfigFile
@@ -27,6 +32,18 @@ func (f *FrameworkConf) GetLogToStderr() bool {
 	return f.logToStderr
 }
 
+func (f *FrameworkConf) GetHttpPort() int {
+	return f.httpPort
+}
+
+func (f *FrameworkConf) GetHttpStaticDir() string {
+	return f.httpStaticDir
+}
+
+func GetHttpStaticDir() string {
+	return gconf.httpStaticDir
+}
+
 func loadConfig(confFilePath string) (*FrameworkConf, error) {
 	var err error
 	configFile, err = goconfig.LoadConfigFile(confFilePath)
@@ -39,5 +56,7 @@ func loadConfig(confFilePath string) (*FrameworkConf, error) {
 	conf.logFile = configFile.MustValue("log", "logFile")
 	conf.logLevel = configFile.MustValue("log", "logLevel")
 	conf.logToStderr = configFile.MustBool("log", "logToStderr")
+	conf.httpPort = configFile.MustInt("http", "port")
+	conf.httpStaticDir = configFile.MustValue("http", "staticDir")
 	return conf, nil
 }

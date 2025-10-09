@@ -26,7 +26,7 @@ func writeHtmlErrorResponse(w http.ResponseWriter, status int, err string) {
 }
 
 func (a *XrtcClientPushAction) Execute(w http.ResponseWriter, r *framework.ComRequest) {
-	t, err := template.ParseFiles("./static/template/push.tpl")
+	t, err := template.ParseFiles(framework.GetHttpStaticDir() + "/template/push.tpl")
 	if err != nil {
 		fmt.Println("parse template failed, err:", err)
 		writeHtmlErrorResponse(w, http.StatusNotFound, err.Error())

@@ -81,6 +81,6 @@ func entry(w http.ResponseWriter, r *http.Request) {
 }
 
 func StartHttp(port string) error {
-	fmt.Println("http server start on port:", port)
-	return http.ListenAndServe(port, nil)
+	fmt.Println("http server start on port:", gconf.GetHttpPort())
+	return http.ListenAndServe(fmt.Sprintf(":%d", gconf.GetHttpPort()), nil)
 }
