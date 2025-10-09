@@ -391,7 +391,12 @@ func SetAlsoToStderr(alsoToStderr_ bool) {
 }
 
 func SetLogLevel(level int32) {
-	stderrThreshold = severityFlag(level)
+	switch logsink.Severity(level) {
+	case logsink.Debug, logsink.Info, logsink.Warning, logsink.Error, logsink.Fatal:
+		stderrThreshold = severityFlag(level)
+	default:
+		stderrThreshold = severityFlag(logsink.Error)
+	}
 }
 
 func init() {
@@ -402,7 +407,6 @@ func init() {
 
 	flag.Var(&logBacktraceAt, "log_backtrace_at", "when logging hits line file:N, emit a stack trace")
 
-	stderrThreshold = severityFlag(logsink.Error)
 	flag.BoolVar(&toStderr, "logtostderr", false, "log to standard error instead of files")
 	flag.BoolVar(&alsoToStderr, "alsologtostderr", false, "log to standard error as well as files")
 	flag.Var(&stderrThreshold, "stderrthreshold", "logs at or above this threshold go to stderr")
