@@ -80,7 +80,21 @@ func entry(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func StartHttp(port string) error {
+func RegisterStaticFileServer() {
+	// 注册静态文件服务器
+	staticUrl := gconf.GetHttpStaticPrefix()
+	fmt.Println("staticUrl:", staticUrl)
+	fileServer := http.FileServer(http.Dir(gconf.GetHttpStaticDir()))
+	// 注册fileserver
+	http.Handle(staticUrl, http.StripPrefix(staticUrl, fileServer))
+}
+
+func StartHttp() error {
 	fmt.Println("http server start on port:", gconf.GetHttpPort())
 	return http.ListenAndServe(fmt.Sprintf(":%d", gconf.GetHttpPort()), nil)
+}
+
+func StartHttps() error {
+	fmt.Println("https server start on port:", gconf.GetHttpsPort())
+	return http.ListenAndServeTLS(fmt.Sprintf(":%d", gconf.GetHttpsPort()), gconf.GetCertFile(), gconf.GetKeyFile(), nil)
 }
