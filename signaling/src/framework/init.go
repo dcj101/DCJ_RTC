@@ -59,5 +59,11 @@ func Init(configDir string) error {
 	glog.SetLogFileName(gconf.GetLogFile())
 	glog.SetAlsoToStderr(gconf.GetLogToStderr())
 	glog.SetLogLevel(int32(getLogLevel(gconf.GetLogLevel())))
+
+	// 加载xrpc客户端
+	if err := loadXrpc(); err != nil {
+		glog.Error("load xrpc clients failed, err: %v", err)
+		return err
+	}
 	return nil
 }
