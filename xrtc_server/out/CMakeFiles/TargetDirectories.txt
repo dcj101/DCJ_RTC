@@ -1,0 +1,3 @@
+/Users/bytedance/workspace/learning/XRTC1.0/xrtc_server/out/CMakeFiles/xrtc_server.dir
+/Users/bytedance/workspace/learning/XRTC1.0/xrtc_server/out/CMakeFiles/edit_cache.dir
+/Users/bytedance/workspace/learning/XRTC1.0/xrtc_server/out/CMakeFiles/rebuild_cache.dir

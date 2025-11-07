@@ -1,0 +1,3 @@
+[submodule "xrtc_server/thirdlib/yaml-cpp"]
+	path = xrtc_server/thirdlib/yaml-cpp
+	url = https://github.com/jbeder/yaml-cpp
