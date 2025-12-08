@@ -26,6 +26,8 @@ add_definitions(
 include_directories(
     "./src"
     "./thirdlib/yaml-cpp/out/include"
+    "./thirdlib/rtcbase_v1/src"
+    "./thirdlib/rtcbase_v1/third_party/include"
 )
 
 link_directories(
@@ -33,10 +35,10 @@ link_directories(
     "./thirdlib/yaml-cpp/out/lib"
 )
 
-file(GLOB_RECURSE SRC_FILES "src/*.cpp" "src/base/*.cpp")
+file(GLOB_RECURSE SRC_FILES "src/*.cpp" "src/base/*.cpp" "src/server/*.cpp")
 
 add_executable(xrtc_server ${SRC_FILES})
 
-target_link_libraries(xrtc_server
+target_link_libraries(xrtc_server "-framework CoreFoundation"
 libyaml-cpp.a librtcbase.a
 )
