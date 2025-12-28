@@ -28,11 +28,13 @@ include_directories(
     "./thirdlib/yaml-cpp/out/include"
     "./thirdlib/rtcbase_v1/src"
     "./thirdlib/rtcbase_v1/third_party/include"
+    "./thirdlib/libev/configDir/include"
 )
 
 link_directories(
     "./thirdlib/rtcbase_v1/out"
     "./thirdlib/yaml-cpp/out/lib"
+    "./thirdlib/libev/configDir/lib"
 )
 
 file(GLOB_RECURSE SRC_FILES "src/*.cpp" "src/base/*.cpp" "src/server/*.cpp")
@@ -40,5 +42,5 @@ file(GLOB_RECURSE SRC_FILES "src/*.cpp" "src/base/*.cpp" "src/server/*.cpp")
 add_executable(xrtc_server ${SRC_FILES})
 
 target_link_libraries(xrtc_server "-framework CoreFoundation"
-libyaml-cpp.a librtcbase.a
+libyaml-cpp.a librtcbase.a libev.a
 )

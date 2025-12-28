@@ -21,6 +21,8 @@ public:
     ~SignalingServer();
 
     int init(const char* config_file);
+    SignalingServerOptions _options;
+    int _listen_fd = -1;
     
 };
 

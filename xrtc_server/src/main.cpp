@@ -50,7 +50,7 @@ int init_signaling_server() {
         fprintf(stderr, "init_signaling_server: signaling_server is null\n");
         return -1;
     }
-    ret = signaling_server->init("../conf/signaling.yaml");
+    int ret = signaling_server->init("../conf/signaling_server.yaml");
     if (ret != 0) {
         fprintf(stderr, "init_signaling_server: signaling_server init failed\n");
         return -1;
@@ -73,6 +73,14 @@ int main() {
     }
 
     RTC_LOG(LS_INFO) << "main: log init success";
+
+    ret = init_signaling_server();
+    if (ret != 0) {
+        fprintf(stderr, "main: init_signaling_server failed\n");
+        return -1;
+    }
+    // signaling_server->start();
+        
     g_log->join();
     return 0;
 }

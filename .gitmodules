@@ -1,3 +1,6 @@
 [submodule "xrtc_server/thirdlib/yaml-cpp"]
 	path = xrtc_server/thirdlib/yaml-cpp
 	url = https://github.com/jbeder/yaml-cpp
+[submodule "xrtc_server/thirdlib/libev"]
+	path = xrtc_server/thirdlib/libev
+	url = https://github.com/enki/libev.git
