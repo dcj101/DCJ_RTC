@@ -1,7 +1,7 @@
 #include <iostream>
 #include "base/conf.h"
 #include "base/log.h"
-#include "server/siginal_server.h"
+#include "server/signal_server.h"
 
 xrtc::GeneralConf* conf = nullptr;
 xrtc::XrtcLog* g_log = nullptr;
@@ -58,6 +58,12 @@ int init_signaling_server() {
     return 0;
 }
 
+static void process_siganl(int sig) {
+    RTC_LOG(LS_INFO) << "process_siganl: sig " << sig;
+    if (sig == SIGINT || sig == SIGTERM) {
+        signaling_server->notify(xrtc::SignalingServer::QUIT);
+    }
+}
 
 int main() {
     int ret = init_general_conf("../conf/general.yaml");
@@ -79,8 +85,12 @@ int main() {
         fprintf(stderr, "main: init_signaling_server failed\n");
         return -1;
     }
-    // signaling_server->start();
-        
-    g_log->join();
+
+    signal(SIGINT, process_siganl);
+    signal(SIGTERM, process_siganl);
+
+    signaling_server->start();
+
+    signaling_server->join();    
     return 0;
 }

@@ -42,6 +42,7 @@ public:
     IOWatcher(EventLoop* el, io_cb_t cb, void* data) :
         el(el), cb(cb), data(data)
         {
+            // ev_io包含了IOWatcher的生命
             io.data = this;
         }
 public:
@@ -58,6 +59,7 @@ static void generic_io_cb(struct ev_loop* /*loop*/, struct ev_io* io, int events
             watcher->data);
 }
 
+// 注册回调 data其实就是this指针
 IOWatcher* EventLoop::create_io_event(io_cb_t cb, void* data) {
     IOWatcher* w = new IOWatcher(this, cb, data);
     ev_init(&(w->io), generic_io_cb);
@@ -66,6 +68,7 @@ IOWatcher* EventLoop::create_io_event(io_cb_t cb, void* data) {
 
 
 void EventLoop::start_io_event(IOWatcher* w, int fd, int mask) {
+    // 这里注意生命周期
     struct ev_io* io = &(w->io);
     if (ev_is_active(io)) {
         int active_events = TRANS_FROM_EV_MASK(io->events);
