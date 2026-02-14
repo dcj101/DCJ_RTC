@@ -2,6 +2,8 @@
 #define __TCP_CONNECTION_H_
 
 #include "base/event_loop.h"
+#include "base/xhead.h"
+#include <rtc_base/sds.h>
 
 namespace xrtc {
 
@@ -15,6 +17,9 @@ public:
     char ip[64];
     int port;
     IOWatcher* _io_watcher = nullptr;
+    sds querybuf;// 读取数据的buff
+    size_t bytes_expected = XHEAD_SIZE;
+    size_t bytes_processed = 0;
 };
 
 } // namespace xrtc
