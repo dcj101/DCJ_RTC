@@ -5,6 +5,8 @@ import (
 	"io"
 )
 
+// Request 表示一个RPC请求
+// 包含请求头和请求体
 type Request struct {
 	Header Header
 	Body   io.Reader
@@ -27,4 +29,14 @@ func NewRequest(body io.Reader, logId uint32) *Request {
 	}
 
 	return req
+}
+
+func (r *Request) Write(w io.Writer) (n int, err error) {
+	// 固定header大小
+	if n, err = r.Header.Write(w); err != nil {
+		return 0, err
+	}
+	// 写入body
+	written, err := io.Copy(w, r.Body)
+	return int(written), err
 }

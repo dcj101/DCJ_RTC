@@ -3,10 +3,14 @@
 
 #include <string>
 #include <thread>
-
+#include <vector>
 #include "base/event_loop.h"
 
+
 namespace xrtc {
+
+class SignalingServerWorker;
+
 struct SignalingServerOptions {
     std::string host;
     int port;
@@ -48,6 +52,8 @@ private:
     int _notify_send_fd = -1;
     EventLoop* _el;
     std::thread* _thread = nullptr;
+    std::vector<SignalingServerWorker*> _workers;
+    int _next_worker_id = 0;
 };
 
 }

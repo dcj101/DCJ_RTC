@@ -59,7 +59,7 @@ static void generic_io_cb(struct ev_loop* /*loop*/, struct ev_io* io, int events
             watcher->data);
 }
 
-// 注册回调 data其实就是this指针
+// 注册回调 data其实就是this指针表示谁持有IOWatcher
 IOWatcher* EventLoop::create_io_event(io_cb_t cb, void* data) {
     IOWatcher* w = new IOWatcher(this, cb, data);
     ev_init(&(w->io), generic_io_cb);

@@ -1,6 +1,8 @@
 package xrpc
 
 import (
+	"bufio"
+	"fmt"
 	"net"
 	"time"
 )
@@ -53,6 +55,7 @@ func (c *Client) writeTimeout() time.Duration {
 func (c *Client) Do(req *Request) (*Response, error) {
 	// 从选择器中选择一个服务器
 	remoteAddr, err := c.Selector.PickServer()
+	fmt.Println("remoteAddr:", remoteAddr)
 	if err != nil {
 		return nil, err
 	}
@@ -61,9 +64,29 @@ func (c *Client) Do(req *Request) (*Response, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer netConn.Close()
 
 	netConn.SetReadDeadline(time.Now().Add(c.readTimeout()))
 	netConn.SetWriteDeadline(time.Now().Add(c.writeTimeout()))
 
-	return nil, nil
+	// 发送请求
+	// 使用 bufio.NewReadWriter 包装 netConn，提供带缓冲的读写能力
+	// 1. NewReader: 预读取网络数据到内存，减少 Read 系统调用
+	// 2. NewWriter: 暂存写入数据到内存，满后或 Flush 时才发送，减少 Write 系统调用
+	rw := bufio.NewReadWriter(bufio.NewReader(netConn), bufio.NewWriter(netConn))
+	if _, err := req.Write(rw); err != nil {
+		// 写入请求头失败
+		return nil, err
+	}
+	// 刷新缓冲区，确保请求被发送
+	if err := rw.Flush(); err != nil {
+		return nil, err
+	}
+
+	resp, err := ReadResponse(rw)
+	if err != nil {
+		return nil, err
+	}
+
+	return resp, nil
 }

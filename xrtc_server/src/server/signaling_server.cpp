@@ -1,13 +1,28 @@
-#include "signal_server.h"
+#include "signaling_server.h"
 #include "base/log.h"
 #include "base/socket.h"
 #include <yaml-cpp/yaml.h>
 #include <unistd.h>
+#include "signaling_worker.h"
 
 namespace xrtc {
 
 void accept_new_conn(EventLoop* /*el*/, IOWatcher* /*w*/, int fd, int /*events*/, void* data) {
-    
+    int cfd;
+    char cip[128];
+    int cport;
+
+    cfd = tcp_accept(fd, cip, &cport);
+    if (cfd < 0) {
+        RTC_LOG(LS_WARNING) << "accept new conn error: " << strerror(errno)
+            << ", errno: " << errno;
+        return;
+    }
+
+    SignalingServer* server = (SignalingServer*)data;
+    server->_dispatch_new_conn(cfd);
+
+    RTC_LOG(LS_INFO) << "accept new conn: " << cip << ":" << cport << ", fd: " << cfd;
 }
 
 void signaling_server_recv_notify(EventLoop* /*el*/, IOWatcher* /*w*/, 
@@ -28,6 +43,24 @@ SignalingServer::SignalingServer() : _el(new EventLoop(this)) {
 }
 
 SignalingServer::~SignalingServer() {
+    if (_el) {
+        delete _el;
+        _el = nullptr;
+    }
+
+    if (_thread) {
+        delete _thread;
+        _thread = nullptr;
+    }
+
+    for (auto& worker : _workers) {
+        if (worker) {
+            delete worker;
+            worker = nullptr;
+        }
+    }
+
+    _workers.clear();
 }
 
 
@@ -65,11 +98,18 @@ int SignalingServer::init(const char* config_file) {
 
     // 创建tcp server
     _listen_fd = create_tcp_socket(_options.host.c_str(), _options.port); 
+    if (-1 == _listen_fd) {
+        return -1;
+    }
+
     _io_watcher = _el->create_io_event(accept_new_conn, this);
     // 监听新连接的fd放到事件循环的监听列表里面
     _el->start_io_event(_io_watcher, _listen_fd, EventLoop::READ);
-    if (-1 == _listen_fd) {
-        return -1;
+    // 创建worker thread 
+    for (int i = 0; i < _options.worker_thread_num; i++) {
+        if (-1 == _create_worker(i)) {
+            return -1;
+        }
     }
 
     return 0;
@@ -86,6 +126,8 @@ bool SignalingServer::start() {
         _el->start();
         RTC_LOG(LS_INFO) << "event loop thread is stopped";
     });
+
+    return true;
 }
 
 void SignalingServer::stop() {
@@ -125,18 +167,44 @@ void SignalingServer::_stop() {
 
     RTC_LOG(LS_INFO) << "signaling server stop";
 
-    // for (auto worker : _workers) {
-    //     if (worker) {
-    //         worker->stop();
-    //         worker->join();
-    //     }
-    // }
+    for (auto worker : _workers) {
+        if (worker) {
+            worker->stop();
+            worker->join();
+        }
+    }
+}
+
+
+int SignalingServer::_create_worker(int worker_id) {
+    RTC_LOG(LS_INFO) << "signaling server create worker " << worker_id;
+    SignalingServerWorker* worker = new SignalingServerWorker(worker_id);
+    if (-1 == worker->init()) {
+        RTC_LOG(LS_ERROR) << "signaling server create worker " << worker_id << " failed";
+        return -1;
+    }
+
+    if (false == worker->start()) {
+        RTC_LOG(LS_ERROR) << "signaling server start worker " << worker_id << " failed";
+        return -1;
+    }
+
+    _workers.emplace_back(worker);
+
+    return 0;
 }
 
 void SignalingServer::join() {
     if (_thread && _thread->joinable()) {
         _thread->join();
     }
+}
+
+void SignalingServer::_dispatch_new_conn(int fd) {
+    int worker_id = _next_worker_id++ % _workers.size();
+    SignalingServerWorker* worker = _workers[worker_id];
+
+    worker->notify_new_conn(fd);
 }
 
 }
