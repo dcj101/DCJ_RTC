@@ -64,7 +64,8 @@ func (c *Client) Do(req *Request) (*Response, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer netConn.Close()
+	// 短链接
+	// defer netConn.Close()
 
 	netConn.SetReadDeadline(time.Now().Add(c.readTimeout()))
 	netConn.SetWriteDeadline(time.Now().Add(c.writeTimeout()))

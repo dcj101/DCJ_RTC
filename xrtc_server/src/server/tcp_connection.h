@@ -9,6 +9,10 @@ namespace xrtc {
 
 class TcpConnection {
 public:
+    enum {
+        STATE_HEAD = 0,
+        STATE_BODY = 1
+    };
     TcpConnection(int fd);
     ~TcpConnection();
 
@@ -20,6 +24,7 @@ public:
     sds querybuf;// 读取数据的buff
     size_t bytes_expected = XHEAD_SIZE;
     size_t bytes_processed = 0;
+    int currentState = STATE_HEAD;
 };
 
 } // namespace xrtc

@@ -10,6 +10,7 @@ int generic_accept(int sock, struct sockaddr* sa, socklen_t* sa_len);
 int sock_set_non_block(int fd);
 int sock_set_tcp_nodelay(int fd);
 int sock_peer_to_string(int fd, char* ip, int* port);
+int sock_read_data(int fd, char* data, int len);
 
 
 }

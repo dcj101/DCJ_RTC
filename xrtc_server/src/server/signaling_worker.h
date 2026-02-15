@@ -3,6 +3,7 @@
 #include "base/event_loop.h"
 #include "base/lock_free_queue.h"
 #include <thread>
+#include <rtc_base/slice.h>
 
 namespace xrtc {
 class TcpConnection;
@@ -27,6 +28,9 @@ private:
     void _stop();
     void _new_conn(int fd);
     void _read_conn(int fd);
+    void _close_conn(TcpConnection* c);
+    int _process_query_buffer(TcpConnection* c);
+    int _process_request(TcpConnection* c, const rtc::Slice& header, const rtc::Slice& body);
 private:
     int _worker_id;
     EventLoop* _el;

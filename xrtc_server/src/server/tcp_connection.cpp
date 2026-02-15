@@ -4,7 +4,7 @@
 
 namespace xrtc {
 
-TcpConnection::TcpConnection(int fd) : fd(fd) {
+TcpConnection::TcpConnection(int fd) : fd(fd),querybuf(sdsempty()) {
     memset(ip, 0, sizeof(ip));
     port = 0;
 }

@@ -1,5 +1,6 @@
 #include "signaling_worker.h"
 #include "base/socket.h"
+#include "base/xhead.h"
 #include "tcp_connection.h"
 #include <unistd.h>
 #include <rtc_base/logging.h>
@@ -122,6 +123,25 @@ void SignalingServerWorker::_new_conn(int fd) {
     _conns[fd] = conn;
 }
 
+void SignalingServerWorker::_close_conn(TcpConnection* conn) {
+    if (!conn) {
+        return;
+    }
+
+    int fd = conn->fd;
+    if (fd < 0 || fd >= (int)_conns.size()) {
+        return;
+    }
+
+    if (_conns[fd] == conn) {
+        _el->delete_io_event(conn->_io_watcher);
+        sdsclear(conn->querybuf);
+        sdsfree(conn->querybuf);
+        delete conn;
+        _conns[fd] = nullptr;
+    }
+}
+
 void SignalingServerWorker::_read_conn(int fd) {
     RTC_LOG(LS_INFO) << "signaling worker " << _worker_id << " read conn fd: " << fd;
     if (fd < 0 || fd >= (int)_conns.size() || !_conns[fd]) {
@@ -130,7 +150,67 @@ void SignalingServerWorker::_read_conn(int fd) {
     }
 
     TcpConnection* conn = _conns[fd];
-    
+    // 本地读了多少
+    int nread = 0;
+    // 期待读大小
+    int read_len = conn->bytes_expected;
+    // 获取里面存储了多少数据
+    int qb_len = sdslen(conn->querybuf);
+    // 看看需不需要重新分配空间
+    conn->querybuf = sdsMakeRoomFor(conn->querybuf, read_len);
+    nread = sock_read_data(fd, conn->querybuf + qb_len, read_len);
+
+    RTC_LOG(LS_INFO) << "sock read data, len: " << nread;
+
+     if (-1 == nread) {
+        _close_conn(conn);
+        return;
+    } else if (nread > 0) {
+        sdsIncrLen(conn->querybuf, nread);
+    }
+
+    int ret = _process_query_buffer(conn);
+    if (ret != 0) {
+        _close_conn(conn);
+        return;
+    } else {
+
+    }
+
+}
+
+int SignalingServerWorker::_process_query_buffer(TcpConnection* c) {
+    // 判断至少读入了一个头部
+    while(sdslen(c->querybuf) >= c->bytes_expected + c->bytes_processed) {
+        xhead_t* head = (xhead_t*) c->querybuf;
+        if (TcpConnection::STATE_HEAD == c->currentState) {
+            if (XHEAD_MAGIC_NUM != head->magic_num) {
+                RTC_LOG(LS_WARNING) << "invaild data, fd:" << c->fd << " magic num " << head->magic_num;
+                return -1;
+            }
+
+            c->currentState = TcpConnection::STATE_BODY;
+            c->bytes_processed = XHEAD_SIZE;
+            c->bytes_expected = head->body_len;
+        } else {
+            rtc::Slice header(c->querybuf,XHEAD_SIZE);
+            rtc::Slice body(c->querybuf + XHEAD_SIZE, head->body_len);
+
+            int ret = _process_request(c, header, body);
+            if (ret != 0) {
+                return -1;
+            }
+
+            // 短链接处理
+            c->bytes_processed = 65535;
+        }
+    }
+
+    return 0;
+}
+
+int SignalingServerWorker::_process_request(TcpConnection* c, const rtc::Slice& header, const rtc::Slice& body) {
+    RTC_LOG(LS_WARNING) << "recv head body : " << body.data();
 }
 
 void SignalingServerWorker::_stop() {

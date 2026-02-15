@@ -163,4 +163,21 @@ int sock_peer_to_string(int fd, char* ip, int* port) {
     return 0;
 }
 
+int sock_read_data(int fd, char* data, int len) {
+    int nread = read(fd, data, len);
+    if (-1 == nread) {
+        if (EAGAIN == errno) {
+            nread = 0;
+        } else {
+            RTC_LOG(LS_WARNING) << "sock read failed, error : " << strerror(errno) << ", erron: " << errno << ", fd: " << fd;
+        }
+    } else if (0 == nread) {
+        RTC_LOG(LS_WARNING) << "connection closed, fd: " << fd;
+        return -1;
+    }
+
+    return nread;
+}
+
+
 }

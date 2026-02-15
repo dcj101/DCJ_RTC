@@ -9,6 +9,7 @@ import (
 	"strconv"
 )
 
+// signal -> media 交互信息
 const (
 	CMDNO_PUSH      = 1
 	CMDNO_PULL      = 2
