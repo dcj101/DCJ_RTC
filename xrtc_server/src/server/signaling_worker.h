@@ -4,6 +4,8 @@
 #include "base/lock_free_queue.h"
 #include <thread>
 #include <rtc_base/slice.h>
+#include "signaling_server.h"
+
 
 namespace xrtc {
 class TcpConnection;
@@ -13,8 +15,8 @@ public:
         QUIT = 0,
         NEW_CONN = 1,
     };
-    SignalingServerWorker(int worker_id);
-    ~SignalingServerWorker() = default;
+    SignalingServerWorker(int worker_id, const SignalingServerOptions& options);
+    ~SignalingServerWorker();
     int init();
     bool start();
     void stop();
@@ -23,6 +25,7 @@ public:
 private:
     friend void signaling_warker_recv_notify(EventLoop* el, IOWatcher* w, int fd, int events, void* data);
     friend void conn_io_cb(EventLoop* el, IOWatcher* w, int fd, int events, void* data);
+    friend void conn_timer_cb(EventLoop* el, TimerWatcher* w, void* data);
     int notify(int msg);
     void _process_notify(int msg);
     void _stop();
@@ -31,6 +34,8 @@ private:
     void _close_conn(TcpConnection* c);
     int _process_query_buffer(TcpConnection* c);
     int _process_request(TcpConnection* c, const rtc::Slice& header, const rtc::Slice& body);
+    void _process_timeout(TcpConnection* c);
+    void _remove_conn(TcpConnection* c);
 private:
     int _worker_id;
     EventLoop* _el;
@@ -40,6 +45,7 @@ private:
     std::thread* _thread = nullptr;
     LockFreeQueue<int> _q_conn;
     std::vector<TcpConnection*> _conns;
+    SignalingServerOptions _options;
 };
 
 }

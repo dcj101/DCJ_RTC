@@ -33,6 +33,8 @@ public:
     void start_timer(TimerWatcher* w, unsigned int usec);
     void stop_timer(TimerWatcher* w);
     void delete_timer(TimerWatcher* w);
+    void* owner() { return _owner; }
+    unsigned long long now();
 private:
     void* _owner;
     struct ev_loop* _loop;

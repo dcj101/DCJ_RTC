@@ -65,7 +65,10 @@ IOWatcher* EventLoop::create_io_event(io_cb_t cb, void* data) {
     ev_init(&(w->io), generic_io_cb);
     return w;
 }
-
+// ev_now返回是秒级别的，这里转换为微秒级别的时间戳
+unsigned long long EventLoop::now() {
+    return ev_now(_loop) * 1000000;
+}
 
 void EventLoop::start_io_event(IOWatcher* w, int fd, int mask) {
     // 这里注意生命周期

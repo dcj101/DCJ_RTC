@@ -178,7 +178,7 @@ void SignalingServer::_stop() {
 
 int SignalingServer::_create_worker(int worker_id) {
     RTC_LOG(LS_INFO) << "signaling server create worker " << worker_id;
-    SignalingServerWorker* worker = new SignalingServerWorker(worker_id);
+    SignalingServerWorker* worker = new SignalingServerWorker(worker_id, _options);
     if (-1 == worker->init()) {
         RTC_LOG(LS_ERROR) << "signaling server create worker " << worker_id << " failed";
         return -1;

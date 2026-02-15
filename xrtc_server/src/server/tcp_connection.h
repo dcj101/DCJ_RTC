@@ -21,10 +21,12 @@ public:
     char ip[64];
     int port;
     IOWatcher* _io_watcher = nullptr;
+    TimerWatcher* timer_watcher = nullptr;
     sds querybuf;// 读取数据的buff
     size_t bytes_expected = XHEAD_SIZE;
     size_t bytes_processed = 0;
     int currentState = STATE_HEAD;
+    unsigned long long last_active_time = 0;
 };
 
 } // namespace xrtc

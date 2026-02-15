@@ -26,9 +26,49 @@ void conn_io_cb(EventLoop* el, IOWatcher* w, int fd, int events, void* data) {
     }
 }
 
-SignalingServerWorker::SignalingServerWorker(int worker_id) : _worker_id(worker_id), _el(new EventLoop(this)) {
+void conn_timer_cb(EventLoop* el, TimerWatcher* w, void* data) {
+    TcpConnection* conn = (TcpConnection*)data;
+    SignalingServerWorker* worker = (SignalingServerWorker*)el->owner();
+    worker->_process_timeout(conn);
+}
+
+void SignalingServerWorker::_process_timeout(TcpConnection* c) {
+    //检查链接是否超时
+    if (_el->now() - c->last_active_time >= (unsigned int)_options.connection_timeout_ms) {
+        RTC_LOG(LS_INFO) << "signaling worker " << _worker_id << " conn " << c->fd << " timeout";
+        _close_conn(c);
+    }
 
 }
+
+SignalingServerWorker::SignalingServerWorker(int worker_id, const SignalingServerOptions& options) : _worker_id(worker_id), _el(new EventLoop(this)), _options(options) {
+
+}
+
+SignalingServerWorker::~SignalingServerWorker() {
+    for (auto conn : _conns) {
+        if (conn) {
+            _close_conn(conn);
+        }
+    }
+
+    _conns.clear();
+
+    if (_el) {
+        delete _el;
+        _el = nullptr;
+    }
+
+    close(_notify_recv_fd);
+    close(_notify_send_fd);
+
+    if (_thread) {
+        _thread->join();
+        delete _thread;
+        _thread = nullptr;
+    }
+}
+
 
 
 int SignalingServerWorker::init() {
@@ -116,6 +156,10 @@ void SignalingServerWorker::_new_conn(int fd) {
 
     conn->_io_watcher = _el->create_io_event(conn_io_cb, this);
     _el->start_io_event(conn->_io_watcher, fd, EventLoop::READ);
+    conn->timer_watcher = _el->create_timer(conn_timer_cb, conn, true);
+    _el->start_timer(conn->timer_watcher, 100000); // 100ms
+    conn->last_active_time = _el->now();
+
     if ((size_t)fd >= _conns.size()) {
         _conns.resize(fd * 2, nullptr);
     }
@@ -123,23 +167,17 @@ void SignalingServerWorker::_new_conn(int fd) {
     _conns[fd] = conn;
 }
 
-void SignalingServerWorker::_close_conn(TcpConnection* conn) {
-    if (!conn) {
-        return;
-    }
+void SignalingServerWorker::_close_conn(TcpConnection* c) {
+    RTC_LOG(LS_INFO) << "close connection, fd: " << c->fd;
+    close(c->fd);
+    _remove_conn(c);
+}
 
-    int fd = conn->fd;
-    if (fd < 0 || fd >= (int)_conns.size()) {
-        return;
-    }
-
-    if (_conns[fd] == conn) {
-        _el->delete_io_event(conn->_io_watcher);
-        sdsclear(conn->querybuf);
-        sdsfree(conn->querybuf);
-        delete conn;
-        _conns[fd] = nullptr;
-    }
+void SignalingServerWorker::_remove_conn(TcpConnection* c) {
+    _el->delete_timer(c->timer_watcher);
+    _el->delete_io_event(c->_io_watcher);
+    _conns[c->fd] = nullptr;
+    delete c;
 }
 
 void SignalingServerWorker::_read_conn(int fd) {
@@ -159,7 +197,7 @@ void SignalingServerWorker::_read_conn(int fd) {
     // 看看需不需要重新分配空间
     conn->querybuf = sdsMakeRoomFor(conn->querybuf, read_len);
     nread = sock_read_data(fd, conn->querybuf + qb_len, read_len);
-
+    conn->last_active_time = _el->now();
     RTC_LOG(LS_INFO) << "sock read data, len: " << nread;
 
      if (-1 == nread) {

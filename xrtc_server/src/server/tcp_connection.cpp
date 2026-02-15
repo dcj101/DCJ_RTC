@@ -11,6 +11,7 @@ TcpConnection::TcpConnection(int fd) : fd(fd),querybuf(sdsempty()) {
 
 TcpConnection::~TcpConnection() {
     close(fd);
+    sdsfree(querybuf);
 }
 
 
