@@ -4,3 +4,6 @@
 [submodule "xrtc_server/thirdlib/libev"]
 	path = xrtc_server/thirdlib/libev
 	url = https://github.com/enki/libev.git
+[submodule "xrtc_server/thirdlib/jsoncpp"]
+	path = xrtc_server/thirdlib/jsoncpp
+	url = https://github.com/open-source-parsers/jsoncpp.git

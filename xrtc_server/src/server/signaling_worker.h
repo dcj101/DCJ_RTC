@@ -5,6 +5,7 @@
 #include <thread>
 #include <rtc_base/slice.h>
 #include "signaling_server.h"
+#include <json/json.h>
 
 
 namespace xrtc {
@@ -36,6 +37,7 @@ private:
     int _process_request(TcpConnection* c, const rtc::Slice& header, const rtc::Slice& body);
     void _process_timeout(TcpConnection* c);
     void _remove_conn(TcpConnection* c);
+    int _process_push(int cmdno, TcpConnection* c, const Json::Value& root, int log_id);
 private:
     int _worker_id;
     EventLoop* _el;
