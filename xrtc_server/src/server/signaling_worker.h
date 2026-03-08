@@ -6,6 +6,9 @@
 #include <rtc_base/slice.h>
 #include "signaling_server.h"
 #include <json/json.h>
+#include "base/xrtcserver_def.h"
+#include <mutex>
+#include <queue>
 
 
 namespace xrtc {
@@ -15,6 +18,7 @@ public:
     enum {
         QUIT = 0,
         NEW_CONN = 1,
+        RTC_MSG = 2,
     };
     SignalingServerWorker(int worker_id, const SignalingServerOptions& options);
     ~SignalingServerWorker();
@@ -23,6 +27,9 @@ public:
     void stop();
     void join();
     int notify_new_conn(int fd);
+    int send_rtc_msg(std::shared_ptr<RtcMsg> msg);
+    void push_rtc_msg(std::shared_ptr<RtcMsg> msg);
+    std::shared_ptr<RtcMsg> pop_rtc_msg();
 private:
     friend void signaling_warker_recv_notify(EventLoop* el, IOWatcher* w, int fd, int events, void* data);
     friend void conn_io_cb(EventLoop* el, IOWatcher* w, int fd, int events, void* data);
@@ -38,6 +45,8 @@ private:
     void _process_timeout(TcpConnection* c);
     void _remove_conn(TcpConnection* c);
     int _process_push(int cmdno, TcpConnection* c, const Json::Value& root, int log_id);
+    int _process_rtc_msg();
+    void _response_server_offer(std::shared_ptr<RtcMsg> msg);
 private:
     int _worker_id;
     EventLoop* _el;
@@ -48,6 +57,9 @@ private:
     LockFreeQueue<int> _q_conn;
     std::vector<TcpConnection*> _conns;
     SignalingServerOptions _options;
+    // chuli1rtc的消息队列
+    std::mutex _q_rtc_msg_mtx;
+    std::queue<std::shared_ptr<RtcMsg>> _q_rtc_msg;
 };
 
 }

@@ -5,7 +5,10 @@
 #include <unistd.h>
 #include <rtc_base/logging.h>
 #include <json/json.h>
-#include "base/xrtcserver_def.h"
+#include "rtc_server.h"
+
+extern xrtc::RtcServer* rtc_server;
+
 namespace xrtc {
 
 void signaling_warker_recv_notify(EventLoop* el, IOWatcher* w, int fd, int events, void* data) {
@@ -127,6 +130,9 @@ void SignalingServerWorker::_process_notify(int msg) {
                 _new_conn(fd);
             }
 
+            break;
+        case RTC_MSG:
+           _process_rtc_msg();
             break;
         default:
             RTC_LOG(LS_ERROR) << "signaling worker " << _worker_id << " unknown notify msg: " << msg;
@@ -313,9 +319,11 @@ std::shared_ptr<RtcMsg> msg = std::make_shared<RtcMsg>();
     msg->audio = audio;
     msg->video = video;
     msg->uid = uid;
+    msg->log_id = log_id;
+    msg->woeker = this;
+    msg->conn = c;
     
-    // return g_rtc_server->send_rtc_msg(msg);
-    return 0;
+    return rtc_server->send_rtc_msg(msg);
 }
 
 void SignalingServerWorker::_stop() {
@@ -343,6 +351,49 @@ void SignalingServerWorker::join() {
 int SignalingServerWorker::notify_new_conn(int fd) {
     _q_conn.produce(fd);
     return notify(NEW_CONN);
+}
+
+int SignalingServerWorker::send_rtc_msg(std::shared_ptr<RtcMsg> msg) {
+    push_rtc_msg(msg);
+    return 0;
+}
+
+void SignalingServerWorker::push_rtc_msg(std::shared_ptr<RtcMsg> msg) {
+    std::lock_guard<std::mutex> lck(_q_rtc_msg_mtx);
+    _q_rtc_msg.push(msg);
+}
+
+std::shared_ptr<RtcMsg> SignalingServerWorker::pop_rtc_msg() {
+    std::lock_guard<std::mutex> lck(_q_rtc_msg_mtx);
+    if (_q_rtc_msg.empty()) {
+        return nullptr;
+    } 
+
+    std::shared_ptr<RtcMsg> msg = _q_rtc_msg.front();
+    _q_rtc_msg.pop();
+    return msg;
+}
+
+int SignalingServerWorker::_process_rtc_msg() {
+    std::shared_ptr<RtcMsg> msg = pop_rtc_msg();
+    if (!msg) {
+        return 0;
+    }
+
+    switch (msg->cmdno)
+    {
+    case CMDNO_PUSH:
+        _response_server_offer(msg);
+        break;
+    
+    default:
+        RTC_LOG(LS_ERROR) << "signaling worker " << _worker_id << " unknown rtc msg cmdno: " << msg->cmdno << ", log_id: " << msg->log_id;
+        break;
+    }
+}
+
+void SignalingServerWorker::_response_server_offer(std::shared_ptr<RtcMsg> msg) {
+    RTC_LOG(LS_INFO) << "signaling worker " << _worker_id << " response server offer, log_id: " << msg->log_id;
 }
 
 }

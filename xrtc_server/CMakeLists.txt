@@ -23,7 +23,11 @@ add_definitions(
     -DWEBRTC_POSIX      # POSIX标准兼容（Mac属于POSIX系统）
 )
 
+# 查找 OpenSSL (使用系统默认版本，并通过 openssl_compat.cpp 提供旧 API 兼容)
+find_package(OpenSSL REQUIRED)
+
 include_directories(
+    ${OPENSSL_INCLUDE_DIR}
     "./src"
     "./thirdlib/yaml-cpp/out/include"
     "./thirdlib/rtcbase_v1/src"
@@ -31,6 +35,8 @@ include_directories(
     "./thirdlib/libev/configDir/include"
     "./thirdlib/jsoncpp/include"
 )
+
+set(OPENSSL_ROOT_DIR /opt/homebrew/opt/openssl@3)
 
 link_directories(
     "./thirdlib/rtcbase_v1/out"
@@ -41,8 +47,13 @@ link_directories(
 
 file(GLOB_RECURSE SRC_FILES "src/*.cpp" "src/base/*.cpp" "src/server/*.cpp")
 
+# 查找 OpenSSL (使用系统默认版本，并通过 openssl_compat.cpp 提供旧 API 兼容)
+find_package(OpenSSL REQUIRED)
+include_directories(${OPENSSL_INCLUDE_DIR})
+
 add_executable(xrtc_server ${SRC_FILES})
 
 target_link_libraries(xrtc_server "-framework CoreFoundation"
 libyaml-cpp.a librtcbase.a libev.a libjsoncpp.a
+${OPENSSL_LIBRARIES}
 )

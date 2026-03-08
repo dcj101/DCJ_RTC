@@ -1,3 +1,4 @@
 signaling/log/*
 signaling/signaling
 xrtc_server/out
+xrtc_server/build

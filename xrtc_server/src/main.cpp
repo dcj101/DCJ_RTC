@@ -2,10 +2,12 @@
 #include "base/conf.h"
 #include "base/log.h"
 #include "server/signaling_server.h"
+#include "server/rtc_server.h"
 
 xrtc::GeneralConf* conf = nullptr;
 xrtc::XrtcLog* g_log = nullptr;
 xrtc::SignalingServer* signaling_server = nullptr;
+xrtc::RtcServer* rtc_server = nullptr;
 
 
 int init_general_conf(const char* filename) {
@@ -58,6 +60,17 @@ int init_signaling_server() {
     return 0;
 }
 
+int init_rtc_server() {
+    rtc_server = new xrtc::RtcServer();
+    int ret = rtc_server->init("../conf/rtc_server.yaml");
+    if (ret != 0) {
+        return -1;
+    }
+
+    return 0;
+}
+
+
 static void process_siganl(int sig) {
     RTC_LOG(LS_INFO) << "process_siganl: sig " << sig;
     if (sig == SIGINT || sig == SIGTERM) {
@@ -86,10 +99,17 @@ int main() {
         return -1;
     }
 
+    ret = init_rtc_server();
+    if (ret != 0) {
+            fprintf(stderr, "main: init_rtc_server failed\n");
+        return -1;
+    }
+
     signal(SIGINT, process_siganl);
     signal(SIGTERM, process_siganl);
 
     signaling_server->start();
+    rtc_server->start();
 
     signaling_server->join();    
     return 0;
