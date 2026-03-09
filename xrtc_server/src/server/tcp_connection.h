@@ -4,6 +4,8 @@
 #include "base/event_loop.h"
 #include "base/xhead.h"
 #include <rtc_base/sds.h>
+#include <rtc_base/slice.h>
+#include <list>
 
 namespace xrtc {
 
@@ -27,6 +29,7 @@ public:
     size_t bytes_processed = 0;
     int currentState = STATE_HEAD;
     unsigned long long last_active_time = 0;
+    std::list<rtc::Slice> reply_msgs;
 };
 
 } // namespace xrtc

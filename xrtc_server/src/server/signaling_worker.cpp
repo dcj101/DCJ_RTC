@@ -6,6 +6,7 @@
 #include <rtc_base/logging.h>
 #include <json/json.h>
 #include "rtc_server.h"
+#include <rtc_base/zmalloc.h>
 
 extern xrtc::RtcServer* rtc_server;
 
@@ -27,6 +28,48 @@ void conn_io_cb(EventLoop* el, IOWatcher* w, int fd, int events, void* data) {
     SignalingServerWorker* worker = (SignalingServerWorker*)data;
     if (events & EventLoop::READ) {
         worker->_read_conn(fd);
+    }
+
+    if (events & EventLoop::WRITE) {
+        worker->_write_conn(fd);
+    }
+}
+
+void SignalingServerWorker::_write_conn(int fd) {
+    if (fd <= 0 || fd >= _conns.size() || !_conns[fd]) {
+        RTC_LOG(LS_ERROR) << "signaling worker " << _worker_id << " write conn " << fd << " failed, conn not found";
+        return;
+    }
+
+    TcpConnection* conn = _conns[fd];
+
+    int cur_pos = 0;
+    while (!conn->reply_msgs.empty()) {
+        rtc::Slice msg = conn->reply_msgs.front();
+        int ret = sock_write_data(fd, msg.data(), msg.size());
+        if (ret < 0) {
+            RTC_LOG(LS_ERROR) << "signaling worker " << _worker_id << " write conn " << fd << " failed, ret: " << ret << " errno: " << strerror(errno);
+            _close_conn(conn);
+            return;
+        } else if (ret == 0) {
+            RTC_LOG(LS_WARNING) << "signaling worker " << _worker_id << " write conn " << fd << " failed, ret: " << ret << " errno: " << strerror(errno);
+        } else if (ret + cur_pos >= msg.size()) {
+            cur_pos = 0;
+            // 写入完毕
+            conn->reply_msgs.pop_front();
+            zfree((void*)msg.data());
+            RTC_LOG(LS_INFO) << "signaling worker " << _worker_id << " write conn " << fd << " success, msg size: " << msg.size() << ", worker id: " << _worker_id;
+        } else {
+            cur_pos += ret;
+        }
+    }
+
+    conn->last_active_time = _el->now();
+
+    if (conn->reply_msgs.empty()) {
+        // 没有消息了，关闭io写事件
+        _el->stop_io_event(conn->_io_watcher, conn->fd, EventLoop::WRITE);
+        RTC_LOG(LS_INFO) << "stop write event for conn " << fd << " in signaling worker " << _worker_id;
     }
 }
 
@@ -322,6 +365,7 @@ std::shared_ptr<RtcMsg> msg = std::make_shared<RtcMsg>();
     msg->log_id = log_id;
     msg->woeker = this;
     msg->conn = c;
+    msg->fd = c->fd;
     
     return rtc_server->send_rtc_msg(msg);
 }
@@ -355,7 +399,7 @@ int SignalingServerWorker::notify_new_conn(int fd) {
 
 int SignalingServerWorker::send_rtc_msg(std::shared_ptr<RtcMsg> msg) {
     push_rtc_msg(msg);
-    return 0;
+    return notify(RTC_MSG);
 }
 
 void SignalingServerWorker::push_rtc_msg(std::shared_ptr<RtcMsg> msg) {
@@ -392,8 +436,64 @@ int SignalingServerWorker::_process_rtc_msg() {
     }
 }
 
+// conn + fd 才能定位连接 因为conn可能会是野指针，fd可能多个conn相同
 void SignalingServerWorker::_response_server_offer(std::shared_ptr<RtcMsg> msg) {
     RTC_LOG(LS_INFO) << "signaling worker " << _worker_id << " response server offer, log_id: " << msg->log_id;
+    TcpConnection* conn = (TcpConnection*)msg->conn;
+    if (!conn) {
+        RTC_LOG(LS_ERROR) << "signaling worker " << _worker_id << " response server offer failed, conn is null, log_id: " << msg->log_id;
+        return;
+    }
+
+    int fd = msg->fd;
+
+    if (fd <= 0 || size_t(fd) >= _conns.size()) {
+        return;
+    }
+
+    if (_conns[fd] != conn) {
+        return;
+    }
+
+    // 构造响应包头
+    xhead_t* xh  = (xhead_t*)(conn->querybuf);
+    rtc::Slice header(conn->querybuf, XHEAD_SIZE);
+    char* buf = (char*)zmalloc(XHEAD_SIZE + MAX_RES_BUF);
+    if (!buf) {
+        RTC_LOG(LS_ERROR) << "signaling worker " << _worker_id << " response server offer failed, zmalloc failed, log_id: " << msg->log_id;
+        return;
+    }
+
+    memcpy(buf, header.data(), XHEAD_SIZE);
+    xhead_t* res_xh = (xhead_t*)buf;
+
+    Json::Value res_root;
+    res_root["err_no"] = msg->err_no;
+    if (msg->err_no != 0) {
+        res_root["err_msg"] = "process sdp error";
+        res_root["offer"] = "";
+    } else {
+         res_root["err_msg"] = "process sdp success";
+        res_root["offer"] = msg->sdp;
+    }
+
+    Json::StreamWriterBuilder builder;
+    builder.settings_["indentation"] = "";
+    std::string res_body = Json::writeString(builder, res_root);
+    RTC_LOG(LS_INFO) << "signaling worker " << _worker_id << " response server offer, res_body: " << res_body << ", log_id: " << msg->log_id;
+    res_xh->body_len = res_body.size();
+    memcpy(buf + XHEAD_SIZE, res_body.data(), res_body.size());
+
+    // 构造响应包
+    rtc::Slice res_msg(buf, XHEAD_SIZE + res_body.size());
+    _add_reply(conn,res_msg);
+}
+
+void SignalingServerWorker::_add_reply(TcpConnection* c, const rtc::Slice& res_msg) {
+    c->reply_msgs.push_back(res_msg);
+    // 启动io写事件，如果发送缓冲区可写就会不停检查
+    _el->start_io_event(c->_io_watcher, c->fd, EventLoop::WRITE);
+
 }
 
 }

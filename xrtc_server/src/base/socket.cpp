@@ -179,5 +179,20 @@ int sock_read_data(int fd, char* data, int len) {
     return nread;
 }
 
+int sock_write_data(int sock, const char* buf, size_t len) {
+    int nwritten = write(sock, buf, len);
+    if (-1 == nwritten) {
+        if (EAGAIN == errno) {
+            nwritten = 0;
+        } else {
+            RTC_LOG(LS_WARNING) << "sock write failed, error: " << strerror(errno)
+                << ", errno: " << errno << ", fd: " << sock;
+            return -1;
+        }
+    }
+
+    return nwritten;
+}
+
 
 }

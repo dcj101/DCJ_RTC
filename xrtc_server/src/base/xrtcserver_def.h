@@ -7,6 +7,8 @@
 #define CMDNO_STOPPUSH 4
 #define CMDNO_STOPPULL 5
 
+#define MAX_RES_BUF 4096
+
 namespace xrtc {
 
 struct RtcMsg {
@@ -20,6 +22,7 @@ struct RtcMsg {
     // 到底是哪个signaling worker的conn，rtc需要回传信息
     void* woeker = nullptr;
     void* conn = nullptr;
+    int fd = -1;
     // 响应信息和错误码
     std::string sdp;
     int err_no = 0;
