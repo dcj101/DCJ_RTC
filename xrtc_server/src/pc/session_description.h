@@ -3,6 +3,7 @@
 #include <string>
 #include <vector>
 #include <memory>
+#include "codec_info.h"
 
 namespace xrtc {
 
@@ -22,18 +23,22 @@ public:
     virtual ~MediaContentDescription() = default;
     virtual MediaType type() = 0;
     virtual std::string mid() = 0;
-private:
-    MediaType _type;
+    const std::vector<std::shared_ptr<CodecInfo>>& codecs() const { return _codecs; }
+protected:
+    std::vector<std::shared_ptr<CodecInfo>> _codecs;
 };
 
 class AudioContentDescription : public MediaContentDescription {
 public:
+    AudioContentDescription();
+
     MediaType type() override { return MediaType::AUDIO; };
     std::string mid() override { return "audio"; };
 };
 
 class VideoContentDescription : public MediaContentDescription {
 public:
+    VideoContentDescription();
     MediaType type() override { return MediaType::VIDEO; };
     std::string mid() override { return "video"; };
 };
