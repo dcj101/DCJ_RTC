@@ -19,7 +19,7 @@ void rtc_worker_recv_notify(EventLoop* /*el*/, IOWatcher* /*w*/, int fd,
 }
 
 RtcWorker::RtcWorker(int worker_id, const RtcServerOptions& options) : 
-    _options(options), _worker_id(worker_id), _el(new EventLoop(this)) {
+    _options(options), _worker_id(worker_id), _el(new EventLoop(this)), _rtc_stream_mgr(new RtcStreamManager(_el)) {
 }
 
 RtcWorker::~RtcWorker() {
@@ -160,8 +160,14 @@ void RtcWorker::_process_rtc_msg() {
 }
 
 void RtcWorker::_process_push(std::shared_ptr<RtcMsg> msg) {
-    std::string offer = "offer";
-
+    std::string offer;
+    int ret = _rtc_stream_mgr->create_push_stream(msg->uid, msg->stream_name, msg->audio, msg->video, msg->log_id, offer);
+    if (ret != 0) {
+        RTC_LOG(LS_WARNING) << "create offer error, ret: " << ret
+            << ", log_id: " << msg->log_id;
+        return;
+    }
+    
     msg->sdp = offer;
 
     SignalingServerWorker* worker = (SignalingServerWorker*)msg->woeker;

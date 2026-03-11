@@ -64,8 +64,8 @@ func (c *Client) Do(req *Request) (*Response, error) {
 	if err != nil {
 		return nil, err
 	}
-	// 短链接
-	// defer netConn.Close()
+	// 短链接，每次请求都创建一个新的连接，所以要在等每次请求结束后关闭连接
+	defer netConn.Close()
 
 	netConn.SetReadDeadline(time.Now().Add(c.readTimeout()))
 	netConn.SetWriteDeadline(time.Now().Add(c.writeTimeout()))
@@ -83,7 +83,7 @@ func (c *Client) Do(req *Request) (*Response, error) {
 	if err := rw.Flush(); err != nil {
 		return nil, err
 	}
-
+	// 阻塞等待服务器返回响应
 	resp, err := ReadResponse(rw)
 	if err != nil {
 		return nil, err

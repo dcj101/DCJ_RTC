@@ -45,7 +45,7 @@ link_directories(
     "./thirdlib/jsoncpp/build/lib"
 )
 
-file(GLOB_RECURSE SRC_FILES "src/*.cpp" "src/base/*.cpp" "src/server/*.cpp")
+file(GLOB_RECURSE SRC_FILES "src/*.cpp" "src/base/*.cpp" "src/server/*.cpp" "src/stream/*.cpp" "src/pc/*.cpp")
 
 # 查找 OpenSSL (使用系统默认版本，并通过 openssl_compat.cpp 提供旧 API 兼容)
 find_package(OpenSSL REQUIRED)

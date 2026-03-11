@@ -1,6 +1,7 @@
 package action
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"signaling/src/commerrors"
@@ -97,10 +98,29 @@ func (*pushAction) Execute(w http.ResponseWriter, cr *framework.ComRequest) {
 	var resp xrtcPushResp
 
 	err = framework.Call("xrtc", req, &resp, cr.LogId)
+	fmt.Println("resp:", resp)
 	if err != nil {
 		cerr := commerrors.New(commerrors.NetworkErr, "backend process error:"+err.Error())
 		writeJsonErrorResponse(cerr, w, cr)
 		return
 	}
 
+	if resp.ErrNo != 0 {
+		cerr := commerrors.New(commerrors.NetworkErr, "backend process error:"+resp.ErrMsg)
+		writeJsonErrorResponse(cerr, w, cr)
+		return
+	}
+
+	httpResp := comHttpResp{
+		ErrNo:  0,
+		ErrMsg: "success",
+		Data: pushData{
+			Type: "offer",
+			Sdp:  resp.Offer,
+		},
+	}
+
+	b, _ := json.Marshal(httpResp)
+	cr.Logger.AddLogItem("resp", string(b))
+	w.Write(b)
 }
