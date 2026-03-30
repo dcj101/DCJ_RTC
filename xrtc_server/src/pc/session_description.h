@@ -4,6 +4,9 @@
 #include <vector>
 #include <memory>
 #include "codec_info.h"
+#include "ice/ice_credentials.h"
+
+
 
 namespace xrtc {
 
@@ -17,15 +20,28 @@ enum class MediaType {
     VIDEO = 1,
 };
 
+enum class RtpDirection {
+    SendOnly = 0,
+    ReceiveOnly = 1,
+    SendReceive = 2,
+    Inactive = 3,
+};
+
 class MediaContentDescription {
 public:
     MediaContentDescription() = default;
     virtual ~MediaContentDescription() = default;
+    void set_direction(RtpDirection dir) { _direction = dir; }
     virtual MediaType type() = 0;
     virtual std::string mid() = 0;
     const std::vector<std::shared_ptr<CodecInfo>>& codecs() const { return _codecs; }
+    RtpDirection direction() const { return _direction; }
+    bool rtcp_mux() const { return _rtcp_mux; }
+    bool set_rtcp_mux(bool mux) { _rtcp_mux = mux; }
 protected:
     std::vector<std::shared_ptr<CodecInfo>> _codecs;
+    RtpDirection _direction = RtpDirection::Inactive;
+    bool _rtcp_mux = true;
 };
 
 class AudioContentDescription : public MediaContentDescription {
@@ -56,6 +72,13 @@ private:
     std::vector<std::string> _contents;
 };
 
+class TransportDescription {
+public:
+    std::string mid;
+    std::string ice_ufrag;
+    std::string ice_password;
+};
+
 class SessionDescription {
 public:
     SessionDescription(SdpType type);
@@ -65,6 +88,8 @@ public:
     const std::vector<std::shared_ptr<MediaContentDescription>>& media_descs() const { return _media_descs; }
     void add_content_group(const ContentGroup& group) { _content_groups.push_back(group); }
     const std::vector<ContentGroup>& content_groups() const { return _content_groups; }
+    bool add_transport_info(const std::string& mid, const IceParameters& params);
+    std::shared_ptr<TransportDescription> get_transport(const std::string& mid);
 private:
     const std::vector<const ContentGroup* > get_group_by_name(const std::string& name) const;
 private:
@@ -72,6 +97,7 @@ private:
     SdpType _type;
     std::vector<std::shared_ptr<MediaContentDescription>> _media_descs;
     std::vector<ContentGroup> _content_groups;
+    std::vector<std::shared_ptr<TransportDescription>> _transports;
 };
 
 }
