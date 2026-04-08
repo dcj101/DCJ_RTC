@@ -57,11 +57,18 @@ void SessionDescription::add_media_desc(std::shared_ptr<MediaContentDescription>
 }
 
 // 外部支持添加传输信息
-bool SessionDescription::add_transport_info(const std::string& mid, const IceParameters& params) {
+bool SessionDescription::add_transport_info(const std::string& mid, const IceParameters& params, rtc::RTCCertificate* certificate) {
     auto transport = std::make_shared<TransportDescription>();
     transport->mid = mid;
     transport->ice_ufrag = params.ice_ufrag;
     transport->ice_password = params.ice_password;
+    if (certificate) {
+        transport->identity_fingerprint = rtc::SSLFingerprint::CreateFromCertificate(*certificate);
+        if (!transport->identity_fingerprint) {
+            RTC_LOG(LS_ERROR) << "create ssl fingerprint failed";
+            return false;
+        }
+    }
     _transports.push_back(transport);
     return true;
 }
@@ -183,6 +190,10 @@ std::string SessionDescription::to_string() {
         if (transport) {
             ss << "a=ice-ufrag:" << transport->ice_ufrag << "\r\n";
             ss << "a=ice-pwd:" << transport->ice_password << "\r\n";
+            auto fp = transport->identity_fingerprint.get();
+            if (fp) {
+                ss << "a=fingerprint:" << fp->algorithm << " " << fp->GetRfc4572Fingerprint() << "\r\n";
+            }
         }
         
         build_rtp_map(content, ss);

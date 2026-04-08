@@ -19,7 +19,7 @@ PushStream* RtcStreamManager::find_push_stream(const std::string& stream_name) {
 
 
 int RtcStreamManager::create_push_stream(uint64_t uid, const std::string& stream_name,
-    bool audio, bool video, uint32_t log_id, std::string& offer) {
+    bool audio, bool video, uint32_t log_id, rtc::RTCCertificate* certificate, std::string& offer) {
     // 查找流是否存在
     PushStream* stream = find_push_stream(stream_name);
     if (stream != nullptr) {
@@ -28,6 +28,7 @@ int RtcStreamManager::create_push_stream(uint64_t uid, const std::string& stream
     }
 
     stream = new PushStream(_el, uid, stream_name, audio, video, log_id);
+    stream->start(certificate);
     offer = stream->create_offer();
     return 0;
 }

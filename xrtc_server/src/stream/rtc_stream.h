@@ -3,6 +3,7 @@
 #include <string>
 #include "base/event_loop.h"
 #include "pc/peer_connection.h"
+#include "rtc_base/rtc_certificate.h"
 
 // 基类stream
 namespace xrtc {
@@ -12,6 +13,7 @@ public:
         bool audio, bool video, uint32_t log_id);
     virtual ~RtcStream();
     virtual std::string create_offer() = 0;
+    int start(rtc::RTCCertificate* certificate);
 protected:
     uint64_t _uid;
     std::string _stream_name;

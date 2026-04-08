@@ -1,5 +1,6 @@
 #include "peer_connection.h"
 #include "ice/ice_credentials.h"
+#include "base/log.h"
 
 namespace xrtc {
 
@@ -22,6 +23,11 @@ PeerConnection::~PeerConnection() {
 }
 
 std::string PeerConnection::create_offer(const RTCOfferAnswerOptions& opts) {
+    if (opts.dtls_on && !_certificate) {
+        RTC_LOG(LS_ERROR) << "dtls on but certificate is null";
+        return "";
+    }
+
     _local_desc = std::make_unique<SessionDescription>(SdpType::OFFER);
     IceParameters ice_params = IceCredentials::create_random_ice_credentials();
 
@@ -30,7 +36,7 @@ std::string PeerConnection::create_offer(const RTCOfferAnswerOptions& opts) {
         audio_desc->set_direction(get_rtp_dir(opts.send_audio, opts.recv_audio));
         audio_desc->set_rtcp_mux(opts.use_rtcp_mux);
         _local_desc->add_media_desc(audio_desc);
-        _local_desc->add_transport_info(audio_desc->mid(), ice_params);
+        _local_desc->add_transport_info(audio_desc->mid(), ice_params, _certificate);
     }
 
     if (opts.recv_video) {
@@ -38,7 +44,7 @@ std::string PeerConnection::create_offer(const RTCOfferAnswerOptions& opts) {
         video_desc->set_direction(get_rtp_dir(opts.send_video, opts.recv_video));
         video_desc->set_rtcp_mux(opts.use_rtcp_mux);
         _local_desc->add_media_desc(video_desc);
-        _local_desc->add_transport_info(video_desc->mid(), ice_params);
+        _local_desc->add_transport_info(video_desc->mid(), ice_params, _certificate);
     }
     
     if (opts.use_rtp_mux) {
@@ -52,7 +58,13 @@ std::string PeerConnection::create_offer(const RTCOfferAnswerOptions& opts) {
         }
     }
     
-
     return _local_desc->to_string();
 }
+
+int PeerConnection::init(rtc::RTCCertificate* certificate) {
+    _certificate = certificate;
+    return 0;
+}
+
+
 }

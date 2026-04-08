@@ -14,4 +14,9 @@ RtcStream::~RtcStream() {
     
 }
 
+int RtcStream::start(rtc::RTCCertificate* certificate) {
+    return _pc->init(certificate);
+}
+
+
 }

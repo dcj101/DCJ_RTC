@@ -4,7 +4,10 @@
 #include <vector>
 #include <memory>
 #include "codec_info.h"
+#include "rtc_base/rtc_certificate.h"
+#include "rtc_base/ssl_fingerprint.h"
 #include "ice/ice_credentials.h"
+#include "base/log.h"
 
 
 
@@ -77,6 +80,7 @@ public:
     std::string mid;
     std::string ice_ufrag;
     std::string ice_password;
+    std::unique_ptr<rtc::SSLFingerprint> identity_fingerprint;
 };
 
 class SessionDescription {
@@ -88,7 +92,7 @@ public:
     const std::vector<std::shared_ptr<MediaContentDescription>>& media_descs() const { return _media_descs; }
     void add_content_group(const ContentGroup& group) { _content_groups.push_back(group); }
     const std::vector<ContentGroup>& content_groups() const { return _content_groups; }
-    bool add_transport_info(const std::string& mid, const IceParameters& params);
+    bool add_transport_info(const std::string& mid, const IceParameters& params, rtc::RTCCertificate* certificate);
     std::shared_ptr<TransportDescription> get_transport(const std::string& mid);
 private:
     const std::vector<const ContentGroup* > get_group_by_name(const std::string& name) const;

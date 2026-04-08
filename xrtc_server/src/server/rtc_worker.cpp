@@ -161,7 +161,7 @@ void RtcWorker::_process_rtc_msg() {
 
 void RtcWorker::_process_push(std::shared_ptr<RtcMsg> msg) {
     std::string offer;
-    int ret = _rtc_stream_mgr->create_push_stream(msg->uid, msg->stream_name, msg->audio, msg->video, msg->log_id, offer);
+    int ret = _rtc_stream_mgr->create_push_stream(msg->uid, msg->stream_name, msg->audio, msg->video, msg->log_id, (rtc::RTCCertificate*)msg->certificate, offer);
     if (ret != 0) {
         RTC_LOG(LS_WARNING) << "create offer error, ret: " << ret
             << ", log_id: " << msg->log_id;

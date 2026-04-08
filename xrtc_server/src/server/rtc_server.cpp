@@ -233,6 +233,7 @@ void RtcServer::_process_rtc_msg() {
         return;
     }
     
+    // 检查证书是否过期
     if (_generate_and_check_certificate() != 0) {
         return;
     }
