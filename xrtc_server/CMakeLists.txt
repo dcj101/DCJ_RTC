@@ -13,7 +13,7 @@ add_compile_options(
     -march=armv8.5-a    # 针对M3的ARM架构版本优化
     -Wno-unused-parameter  # 忽略未使用参数的警告
     -DNDEBUG            # 关闭调试宏（发布模式）
-    -std=c++14          # 强制启用C++14标准（解决jsoncpp链接问题）
+    -std=c++17          # 强制启用C++17标准（解决jsoncpp链接问题）
     -Wthread-safety     # 启用 GCC 的线程安全检查（可选，视编译器而定
 )
 
@@ -49,7 +49,10 @@ file(GLOB_RECURSE SRC_FILES "src/*.cpp" "src/base/*.cpp" "src/server/*.cpp" "src
 
 add_executable(xrtc_server ${SRC_FILES})
 
-target_link_libraries(xrtc_server "-framework CoreFoundation"
-libyaml-cpp.a librtcbase.a libev.a libjsoncpp.a
-${OPENSSL_LIBRARIES}
+target_link_libraries(xrtc_server 
+    "-framework CoreFoundation"         
+    "-framework Foundation"
+    "-framework Cocoa"
+    libyaml-cpp.a librtcbase.a libev.a libjsoncpp.a
+    ${OPENSSL_LIBRARIES}
 )

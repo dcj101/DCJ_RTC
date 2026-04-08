@@ -50,6 +50,7 @@ file(GLOB all_src
 
 add_library(rtcbase ${all_src})
 
+target_sources(rtcbase PRIVATE "src/rtc_base/system/cocoa_threading.mm")
 target_link_libraries(rtcbase libssl.a libcrypto.a)
 
 
