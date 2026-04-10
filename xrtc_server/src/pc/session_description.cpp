@@ -56,6 +56,8 @@ void SessionDescription::add_media_desc(std::shared_ptr<MediaContentDescription>
     _media_descs.push_back(desc);
 }
 
+static const std::string k_connection_role_map[] = {"none", "active", "passive", "actpass", "holeconn"};
+
 // 外部支持添加传输信息
 bool SessionDescription::add_transport_info(const std::string& mid, const IceParameters& params, rtc::RTCCertificate* certificate) {
     auto transport = std::make_shared<TransportDescription>();
@@ -69,6 +71,13 @@ bool SessionDescription::add_transport_info(const std::string& mid, const IcePar
             return false;
         }
     }
+
+    if (_type == SdpType::OFFER) {
+        transport->role = ACTPASS;
+    } else  {
+        transport->role = ACTIVE;
+    }
+
     _transports.push_back(transport);
     return true;
 }
@@ -193,6 +202,7 @@ std::string SessionDescription::to_string() {
             auto fp = transport->identity_fingerprint.get();
             if (fp) {
                 ss << "a=fingerprint:" << fp->algorithm << " " << fp->GetRfc4572Fingerprint() << "\r\n";
+                ss << "a=setup:" << k_connection_role_map[transport->role] << "\r\n";
             }
         }
         
